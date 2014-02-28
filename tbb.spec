@@ -8,13 +8,13 @@
 %define	tbbmaj	2
 %define	libtbb	%mklibname tbb %{tbbmaj}
 %define	libtbm	%mklibname tbbmalloc %{tbbmaj}
-%define	libtbmp	%mklibname tbbmaloc_proxy %{tbbmaj}
+%define	libtbmp	%mklibname tbbmalloc_proxy %{tbbmaj}
 %define	devname	%mklibname -d tbb
 
 Name:		tbb
 Summary:	The Threading Building Blocks library abstracts low-level threading details
 Version:	%{dotver}
-Release:	1.%{reldate}.2
+Release:	1.%{reldate}.3
 License:	GPLv2 with exceptions
 Group:		Development/C++
 URL:		http://threadingbuildingblocks.org/
