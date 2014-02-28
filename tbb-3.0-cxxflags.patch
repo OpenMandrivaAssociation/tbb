@@ -10,7 +10,7 @@ diff -up tbb30_20110419oss/build/linux.gcc.inc\~ tbb30_20110419oss/build/linux.g
  endif
  ifeq ($(cfg), debug)
 -        CPLUS_FLAGS = -DTBB_USE_DEBUG $(ITT_NOTIFY) -g -O0 -DUSE_PTHREAD
-+        CPLUS_FLAGS = -DTBB_USE_DEBUG $(ITT_NOTIFY) -g -O0 -DUSE_PTHREAD $(CXXFLAGS)
++        CPLUS_FLAGS = $(CXXFLAGS) -DTBB_USE_DEBUG $(ITT_NOTIFY) -g -O0 -DUSE_PTHREAD
  endif
  
  ifneq (00,$(lambdas)$(cpp0x))
