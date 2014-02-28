@@ -14,7 +14,7 @@
 Name:		tbb
 Summary:	The Threading Building Blocks library abstracts low-level threading details
 Version:	%{dotver}
-Release:	1.%{reldate}.1
+Release:	1.%{reldate}.2
 License:	GPLv2 with exceptions
 Group:		Development/C++
 URL:		http://threadingbuildingblocks.org/
@@ -83,6 +83,9 @@ Memory Allocator.
 %package -n	%{devname}
 Summary:	The Threading Building Blocks C++ headers and shared development libraries
 Group:		Development/C++
+Requires:	%{libtbb} = %{EVRD}
+Requires:	%{libtbm} = %{EVRD}
+Requires:	%{libtbmp} = %{EVRD}
 
 %description -n	%{devname}
 Header files and shared object symlinks for the Threading Building
