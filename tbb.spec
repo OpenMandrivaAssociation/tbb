@@ -1,42 +1,41 @@
-%define releasedate 20130314
-%define major 4
-%define minor 1
-%define update 3
-%define dotver %{major}.%{minor}
-%define sourcebasename tbb%{major}%{minor}_%{releasedate}oss
+%define	reldate	20140122
+%define	major	4
+%define	minor	2
+%define	update	3
+%define	dotver	%{major}.%{minor}
+%define oname	tbb%{major}%{minor}_%{reldate}oss
 
-%define sourcefilename %{sourcebasename}_src.tgz
+%define	tbbmaj	2
+%define	libtbb	%mklibname tbb %{tbbmaj}
+%define	libtbm	%mklibname tbbmalloc %{tbbmaj}
+%define	libtbmp	%mklibname tbbmaloc_proxy %{tbbmaj}
+%define	devname	%mklibname -d tbb
 
-Name:    tbb
-Summary: The Threading Building Blocks library abstracts low-level threading details
-Version: %{dotver}
-Release: 6.%{releasedate}%{?dist}
-License: GPLv2 with exceptions
-Group:   Development/Tools
-URL:     http://threadingbuildingblocks.org/
+Name:		tbb
+Summary:	The Threading Building Blocks library abstracts low-level threading details
+Version:	%{dotver}
+Release:	1.%{reldate}.1
+License:	GPLv2 with exceptions
+Group:		Development/C++
+URL:		http://threadingbuildingblocks.org/
 
-Source0: http://threadingbuildingblocks.org/sites/default/files/software_releases/source/tbb41_20130314oss_src.tgz
+Source0:	http://threadingbuildingblocks.org/sites/default/files/software_releases/source/%{oname}_src.tgz
+
 # These two are downstream sources.
-Source6: tbb.pc
-Source7: tbbmalloc.pc
-Source8: tbbmalloc_proxy.pc
+Source6:	tbb.pc
+Source7:	tbbmalloc.pc
+Source8:	tbbmalloc_proxy.pc
 
 # Propagate CXXFLAGS variable into flags used when compiling C++.
 # This so that RPM_OPT_FLAGS are respected.
-Patch1: tbb-3.0-cxxflags.patch
+Patch1:		tbb-3.0-cxxflags.patch
 
 # Replace mfence with xchg (for 32-bit builds only) so that TBB
 # compiles and works supported hardware.  mfence was added with SSE2,
 # which we still don't assume.
-Patch2: tbb-4.0-mfence.patch
+Patch2:		tbb-4.0-mfence.patch
 
-# Don't snip -Wall from C++ flags.  Add -fno-strict-aliasing, as that
-# uncovers some static-aliasing warnings.
-# Related: https://bugzilla.redhat.com/show_bug.cgi?id=1037347
-Patch3: tbb-4.1-dont-snip-Wall.patch
-
-BuildRequires: libstdc++-devel
-ExclusiveArch: %{ix86} x86_64 ia64 ppc ppc64 %{arm} aarch64
+ExclusiveArch:	%{ix86} x86_64 ia64 ppc ppc64 %{arm} aarch64
 
 %description
 Threading Building Blocks (TBB) is a C++ runtime library that
@@ -49,80 +48,106 @@ threading models.  The applications you write are portable across
 platforms.  Since the library is also inherently scalable, no code
 maintenance is required as more processor cores become available.
 
+%package -n	%{libtbb}
+Summary:	Threading Building Blocks
+Group:		System/Libraries
 
-%package devel
-Summary: The Threading Building Blocks C++ headers and shared development libraries
-Group: Development/Libraries
-Requires: %{name}%{?_isa} = %{version}-%{release}
+%description -n	%{libtbb}
+The Threading Building Blocks library abstracts low-level threading details
 
-%description devel
+Threading Building Blocks (TBB) is a C++ runtime library that
+abstracts the low-level threading details necessary for optimal
+multi-core performance.  It uses common C++ templates and coding style
+to eliminate tedious threading implementation work.
+
+TBB requires fewer lines of code to achieve parallelism than other
+threading models.  The applications you write are portable across
+platforms.  Since the library is also inherently scalable, no code
+maintenance is required as more processor cores become available.
+
+%package -n	%{libtbm}
+Summary:	Threading Building Blocks Scalable Allocator
+Group:		System/Libraries
+
+%description -n	%{libtbm}
+Implementation of Scalable Memory Allocator of Threading Building Blocks.
+
+%package -n	%{libtbmp}
+Summary:	Threading Building Blocks Scallable Malloc Proxy
+Group:		System/Libraries
+
+%description -n	%{libtbmp}
+Implementation of proxy that redirects memory allocation calls to TBB Scalable
+Memory Allocator.
+
+%package -n	%{devname}
+Summary:	The Threading Building Blocks C++ headers and shared development libraries
+Group:		Development/C++
+
+%description -n	%{devname}
 Header files and shared object symlinks for the Threading Building
 Blocks (TBB) C++ libraries.
 
+%package	doc
+Summary:	The Threading Building Blocks documentation
+Group:		Books/Computer books
 
-%package doc
-Summary: The Threading Building Blocks documentation
-Group: Documentation
-
-%description doc
+%description	doc
 PDF documentation for the user of the Threading Building Block (TBB)
 C++ library.
 
-
 %prep
-%setup -q -n %{sourcebasename}
+%setup -q -n %{oname}
 %patch1 -p1
 %patch2 -p1
-%patch3 -p1
 
 %build
-make %{?_smp_mflags} CXXFLAGS="$RPM_OPT_FLAGS" tbb_build_prefix=obj
+%make CXXFLAGS="%{optflags}" tbb_build_prefix=obj
 for file in %{SOURCE6} %{SOURCE7} %{SOURCE8}; do
-    sed 's/_FEDORA_VERSION/%{major}.%{minor}.%{update}/' ${file} \
-        > $(basename ${file})
+    sed 's/@VERSION@/%{major}.%{minor}.%{update}/' ${file} > $(basename ${file})
 done
 
 %install
-mkdir -p $RPM_BUILD_ROOT/%{_libdir}
-mkdir -p $RPM_BUILD_ROOT/%{_includedir}
-
 pushd build/obj_release
-    for file in libtbb{,malloc{,_proxy}}; do
-        install -p -D -m 755 ${file}.so.2 $RPM_BUILD_ROOT/%{_libdir}
-        ln -s $file.so.2 $RPM_BUILD_ROOT/%{_libdir}/$file.so
+    for file in libtbb*.so.%{tbbmaj}; do
+	install -p -m755 ${file} -D %{buildroot}%{_libdir}/${file}
+	ln -s ${file} %{buildroot}%{_libdir}/$(echo ${file}|cut -d. -f1-2)
     done
 popd
 
 pushd include
     find tbb -type f ! -name \*.htm\* -exec \
-        install -p -D -m 644 {} $RPM_BUILD_ROOT/%{_includedir}/{} \
+	install -p -m 644 {} -D %{buildroot}%{_includedir}/{} \
     \;
 popd
 
-for file in %{SOURCE6} %{SOURCE7} %{SOURCE8}; do
-    install -p -D -m 644 $(basename ${file}) \
-	$RPM_BUILD_ROOT/%{_libdir}/pkgconfig/$(basename ${file})
+for file in tbb*.pc; do
+    install -p -m644 ${file} -D %{buildroot}%{_libdir}/pkgconfig/${file}
 done
 
-%post -p /sbin/ldconfig
+%files -n %{libtbb}
+%{_libdir}/libtbb.so.%{tbbmaj}*
 
-%postun -p /sbin/ldconfig
+%files -n %{libtbm}
+%{_libdir}/libtbbmalloc.so.%{tbbmaj}*
 
-%files
-%doc COPYING doc/Release_Notes.txt
-%{_libdir}/*.so.2
+%files -n %{libtbmp}
+%{_libdir}/libtbbmalloc_proxy.so.%{tbbmaj}*
 
-%files devel
-%doc CHANGES
+%files -n %{devname}
+%doc COPYING CHANGES
 %{_includedir}/tbb
-%{_libdir}/*.so
-%{_libdir}/pkgconfig/*.pc
+%{_libdir}/libtbb*.so
+%{_libdir}/pkgconfig/tbb*.pc
 
 %files doc
 %doc doc/Release_Notes.txt
 %doc doc/html
 
 %changelog
+* Fri Feb 28 2014 Per Øyvind Karlsen <proyvind@moondrake.org> 4.2-1.20140122.1
+- initial mdk release adapted from Fedora
+
 * Sun Jan 12 2014 Peter Robinson <pbrobinson@fedoraproject.org> 4.1-6.20130314
 - Build on aarch64, minor spec cleanups
 
