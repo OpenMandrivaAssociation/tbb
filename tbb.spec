@@ -106,7 +106,7 @@ C++ library.
 %patch2 -p1
 
 %build
-%make CXXFLAGS="%{optflags}" tbb_build_prefix=obj
+%make CXXFLAGS="%{optflags}" LDFLAGS="%{ldflags}" tbb_build_prefix=obj
 for file in %{SOURCE6} %{SOURCE7} %{SOURCE8}; do
     sed 's/@VERSION@/%{major}.%{minor}.%{update}/' ${file} > $(basename ${file})
 done
