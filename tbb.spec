@@ -86,6 +86,7 @@ Group:		Development/C++
 Requires:	%{libtbb} = %{EVRD}
 Requires:	%{libtbm} = %{EVRD}
 Requires:	%{libtbmp} = %{EVRD}
+Provides:	%{name}-devel = %{EVRD}
 
 %description -n	%{devname}
 Header files and shared object symlinks for the Threading Building
