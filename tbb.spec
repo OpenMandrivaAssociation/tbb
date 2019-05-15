@@ -35,7 +35,7 @@ Patch1:		tbb-3.0-cxxflags.patch
 # which we still don't assume.
 Patch2:		tbb-4.0-mfence.patch
 
-ExclusiveArch:	%{ix86} %{x86_64} ia64 ppc ppc64 %{armx}
+ExclusiveArch:	%{ix86} %{x86_64} ia64 ppc ppc64 %{armx} %{riscv}
 
 %description
 Threading Building Blocks (TBB) is a C++ runtime library that
