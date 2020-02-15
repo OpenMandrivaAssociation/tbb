@@ -1,252 +1,173 @@
-%define	reldate	20140122
-%define	major	4
-%define	minor	2
-%define	update	3
-%define	dotver	%{major}.%{minor}
-%define oname	tbb%{major}%{minor}_%{reldate}oss
+%define major 2
 
-%define	tbbmaj	2
-%define	libtbb	%mklibname tbb %{tbbmaj}
-%define	libtbm	%mklibname tbbmalloc %{tbbmaj}
-%define	libtbmp	%mklibname tbbmalloc_proxy %{tbbmaj}
-%define	devname	%mklibname -d tbb
+%define libtbb %mklibname tbb %{major}
+%define libtbbmalloc %mklibname tbbmalloc %{major}
+%define libtbbmalloc_proxy %mklibname tbbmalloc_proxy %{major}
+%define libirml %mklibname irml 1
+%define devname %mklibname -d tbb
 
+Summary:	Thread Building Blocks
 Name:		tbb
-Summary:	The Threading Building Blocks library abstracts low-level threading details
-Version:	%{dotver}
-Release:	1.%{reldate}.3
-License:	GPLv2 with exceptions
-Group:		Development/C++
-URL:		http://threadingbuildingblocks.org/
-
-Source0:	http://threadingbuildingblocks.org/sites/default/files/software_releases/source/%{oname}_src.tgz
-
-# These two are downstream sources.
-Source6:	tbb.pc
-Source7:	tbbmalloc.pc
-Source8:	tbbmalloc_proxy.pc
-
-# Propagate CXXFLAGS variable into flags used when compiling C++.
-# This so that RPM_OPT_FLAGS are respected.
-Patch1:		tbb-3.0-cxxflags.patch
-
-# Replace mfence with xchg (for 32-bit builds only) so that TBB
-# compiles and works supported hardware.  mfence was added with SSE2,
-# which we still don't assume.
-Patch2:		tbb-4.0-mfence.patch
-
-ExclusiveArch:	%{ix86} %{x86_64} ia64 ppc ppc64 %{armx} %{riscv}
+Version:	2020.1
+Release:	1
+Url:		http://threadbuildingblocks.org/
+Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}.tar.gz
+License:	Apache 2.0
+Group:		System/Libraries
+BuildRequires:	make
+BuildRequires:	doxygen graphviz
+BuildRequires:	pkgconfig(python3)
+BuildRequires:	swig
+# Don't snip -Wall from C++ flags.  Add -fno-strict-aliasing, as that
+# uncovers some static-aliasing warnings.
+# Related: https://bugzilla.redhat.com/show_bug.cgi?id=1037347
+Patch0:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-dont-snip-Wall.patch
+# Make attributes of aliases match those on the aliased function.
+Patch1:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-attributes.patch
+# Fix test-thread-monitor, which had multiple bugs that could (and did, on
+# ppc64le) result in a hang.
+Patch2:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-test-thread-monitor.patch
+# Fix a test that builds a 4-thread barrier, but cannot guarantee that more
+# than 2 threads will be available to use it.
+Patch3:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-test-task-scheduler-init.patch
+# Fix compilation on aarch64 and s390x.  See
+# https://github.com/intel/tbb/issues/186
+Patch4:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-fetchadd4.patch
 
 %description
-Threading Building Blocks (TBB) is a C++ runtime library that
-abstracts the low-level threading details necessary for optimal
-multi-core performance.  It uses common C++ templates and coding style
-to eliminate tedious threading implementation work.
+Thread Building Blocks
 
-TBB requires fewer lines of code to achieve parallelism than other
-threading models.  The applications you write are portable across
-platforms.  Since the library is also inherently scalable, no code
-maintenance is required as more processor cores become available.
-
-%package -n	%{libtbb}
-Summary:	Threading Building Blocks
+%package -n %{libtbb}
+Summary:	Thread Building Blocks library
 Group:		System/Libraries
 
-%description -n	%{libtbb}
-The Threading Building Blocks library abstracts low-level threading details
-
-Threading Building Blocks (TBB) is a C++ runtime library that
-abstracts the low-level threading details necessary for optimal
-multi-core performance.  It uses common C++ templates and coding style
-to eliminate tedious threading implementation work.
-
-TBB requires fewer lines of code to achieve parallelism than other
-threading models.  The applications you write are portable across
-platforms.  Since the library is also inherently scalable, no code
-maintenance is required as more processor cores become available.
-
-%package -n	%{libtbm}
-Summary:	Threading Building Blocks Scalable Allocator
-Group:		System/Libraries
-
-%description -n	%{libtbm}
-Implementation of Scalable Memory Allocator of Threading Building Blocks.
-
-%package -n	%{libtbmp}
-Summary:	Threading Building Blocks Scallable Malloc Proxy
-Group:		System/Libraries
-
-%description -n	%{libtbmp}
-Implementation of proxy that redirects memory allocation calls to TBB Scalable
-Memory Allocator.
-
-%package -n	%{devname}
-Summary:	The Threading Building Blocks C++ headers and shared development libraries
-Group:		Development/C++
-Requires:	%{libtbb} = %{EVRD}
-Requires:	%{libtbm} = %{EVRD}
-Requires:	%{libtbmp} = %{EVRD}
-Provides:	%{name}-devel = %{EVRD}
-
-%description -n	%{devname}
-Header files and shared object symlinks for the Threading Building
-Blocks (TBB) C++ libraries.
-
-%package	doc
-Summary:	The Threading Building Blocks documentation
-Group:		Books/Computer books
-
-%description	doc
-PDF documentation for the user of the Threading Building Block (TBB)
-C++ library.
-
-%prep
-%setup -q -n %{oname}
-%patch1 -p1
-%patch2 -p1
-
-%build
-%make CXXFLAGS="%{optflags}" LDFLAGS="%{ldflags}" tbb_build_prefix=obj
-for file in %{SOURCE6} %{SOURCE7} %{SOURCE8}; do
-    sed 's/@VERSION@/%{major}.%{minor}.%{update}/' ${file} > $(basename ${file})
-done
-
-%install
-pushd build/obj_release
-    for file in libtbb*.so.%{tbbmaj}; do
-	install -p -m755 ${file} -D %{buildroot}%{_libdir}/${file}
-	ln -s ${file} %{buildroot}%{_libdir}/$(echo ${file}|cut -d. -f1-2)
-    done
-popd
-
-pushd include
-    find tbb -type f ! -name \*.htm\* -exec \
-	install -p -m 644 {} -D %{buildroot}%{_includedir}/{} \
-    \;
-popd
-
-for file in tbb*.pc; do
-    install -p -m644 ${file} -D %{buildroot}%{_libdir}/pkgconfig/${file}
-done
+%description -n %{libtbb}
+Thread Building Blocks library
 
 %files -n %{libtbb}
-%{_libdir}/libtbb.so.%{tbbmaj}*
+%{_libdir}/libtbb.so.%{major}
 
-%files -n %{libtbm}
-%{_libdir}/libtbbmalloc.so.%{tbbmaj}*
+%package -n %{libtbbmalloc}
+Summary:	Thread Building Blocks library
+Group:		System/Libraries
 
-%files -n %{libtbmp}
-%{_libdir}/libtbbmalloc_proxy.so.%{tbbmaj}*
+%description -n %{libtbbmalloc}
+Thread Building Blocks library
+
+%files -n %{libtbbmalloc}
+%{_libdir}/libtbbmalloc.so.%{major}
+
+%package -n %{libtbbmalloc_proxy}
+Summary:	Thread Building Blocks library
+Group:		System/Libraries
+
+%description -n %{libtbbmalloc_proxy}
+Thread Building Blocks library
+
+%files -n %{libtbbmalloc_proxy}
+%{_libdir}/libtbbmalloc_proxy.so.%{major}
+
+%package -n %{libirml}
+Summary:	Thread Building Blocks library
+Group:		System/Libraries
+
+%description -n %{libirml}
+Thread Building Blocks library
+
+%files -n %{libirml}
+%{_libdir}/libirml.so.1
+
+%package -n %{devname}
+Summary:	Development files for the Thread Building Blocks library
+Group:		Development/C++ and C
+Requires:	%{libtbb} = %{EVRD}
+Requires:	%{libtbbmalloc} = %{EVRD}
+Requires:	%{libtbbmalloc_proxy} = %{EVRD}
+Requires:	%{libirml} = %{EVRD}
+Provides:	%{name}-devel = %{EVRD}
+
+%description -n %{devname}
+Development files for the Thread Building Blocks library
 
 %files -n %{devname}
-%doc COPYING CHANGES
+%doc html
 %{_includedir}/tbb
-%{_libdir}/libtbb*.so
-%{_libdir}/pkgconfig/tbb*.pc
+%{_includedir}/rml
+%{_includedir}/serial
+%{_libdir}/*.so
+%{_libdir}/cmake/tbb
+%{_libdir}/pkgconfig/*.pc
 
-%files doc
-%doc doc/Release_Notes.txt
-%doc doc/html
+%package -n python-%{name}
+Summary:	Python bindings for Thread Building Blocks
+Group:		System/Libraries
 
-%changelog
-* Fri Feb 28 2014 Per Øyvind Karlsen <proyvind@moondrake.org> 4.2-1.20140122.1
-- initial mdk release adapted from Fedora
+%description -n python-%{name}
+Python bindings for Thread Building Blocks
 
-* Sun Jan 12 2014 Peter Robinson <pbrobinson@fedoraproject.org> 4.1-6.20130314
-- Build on aarch64, minor spec cleanups
+%files -n python-%{name}
+%{python3_sitearch}/TBB*
+%{python3_sitearch}/tbb
+%{python3_sitearch}/__pycache__/TBB*
 
-* Tue Dec  3 2013 Petr Machata <pmachata@redhat.com> - 4.1-5.20130314
-- Fix building with -Werror=format-security (tbb-4.1-dont-snip-Wall.patch)
+%prep
+%autosetup -p1
 
-* Thu Oct  3 2013 Petr Machata <pmachata@redhat.com> - 4.1-4.20130314
-- Fix %%install to also install include files that are not named *.h
+%build
+if echo %{__cc} | grep -q gcc; then
+	COMPILER=gcc
+else
+	# Workaround for clang bug
+	COMPILER=gcc #clang
+fi
+%make_build all compiler=$COMPILER stdver=c++2a \
+	CXXFLAGS="%{optflags} -DDO_ITT_NOTIFY -DUSE_PTHREAD" \
+	LDFLAGS="%{ldflags} -pthread"
 
-* Sun Aug 04 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1-3.20130314
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+. build/*_release/tbbvars.sh
+cd python
+%make_build -C rml stdver=c++2a \
+	CPLUS_FLAGS="%{optflags} -DDO_ITT_NOTIFY -DUSE_PTHREAD" \
+	LDFLAGS="%{ldflags} -pthread"
+cp -a rml/libirml.so* .
+%py3_build
+cd -
 
-* Tue May 28 2013 Petr Machata <pmachata@redhat.com> - 4.1-3.20130314
-- Enable ARM arches
+%make_build doxygen
 
-* Wed May 22 2013 Petr Machata <pmachata@redhat.com> - 4.1-2.20130314
-- Fix mfence patch.  Since the __TBB_full_memory_fence macro was
-  function-call-like, it stole () intended for function invocation.
 
-* Wed May 22 2013 Petr Machata <pmachata@redhat.com> - 4.1-1.20130314
-- Rebase to 4.1 update 3
+%install
+mkdir -p %{buildroot}%{_libdir}/cmake %{buildroot}%{_libdir}/pkgconfig
+install -p -D -m 755 build/*_release/*.so.%{major} %{buildroot}%{_libdir}/
 
-* Fri Feb 15 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.0-7.20120408
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+cd %{buildroot}%{_libdir}
+for i in *.so.*; do
+	ln -s $i $(echo $i |sed -e 's,\.so\..*,.so,')
+done
+cd -
 
-* Tue Aug 28 2012 Petr Machata <pmachata@redhat.com> - 4.0-6.20120408
-- Fix build on PowerPC
+cp -a include %{buildroot}%{_includedir}
+cp -a src/rml/include %{buildroot}%{_includedir}/rml
 
-* Sat Jul 21 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.0-5.20120408
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+find %{buildroot}%{_includedir} -name "*.html" |xargs rm -f
 
-* Thu Jun  7 2012 Petr Machata <pmachata@redhat.com> - 4.0-4.20120408
-- Rebase to 4.0 update 4
-- Refresh Getting_Started.pdf, Reference.pdf, Tutorial.pdf
-- Provide pkg-config files
-- Resolves: #825402
+. build/*_release/tbbvars.sh
+cd python
+%py3_install
+find %{buildroot} -name "*.py" |xargs chmod +x
+cp -a libirml.so.1 %{buildroot}%{_libdir}/
+ln -s libirml.so.1 %{buildroot}%{_libdir}/libirml.so
+cd -
 
-* Thu Apr 05 2012 Karsten Hopp <karsten@redhat.com> 4.0-3.20110809
-- tbb builds now on PPC(64)
+rm cmake/README.rst
+cp -a cmake %{buildroot}%{_libdir}/cmake/%{name}
 
-* Sat Jan 14 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.0-2.20110809
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
-
-* Tue Oct 18 2011 Petr Machata <pmachata@redhat.com> - 4.0-1.20110809
-- Rebase to 4.0
-  - Port the mfence patch
-  - Refresh the documentation bundle
-
-* Tue Jul 26 2011 Petr Machata <pmachata@redhat.com> - 3.0-1.20110419
-- Rebase to 3.0-r6
-  - Port both patches
-  - Package Design_Patterns.pdf
-  - Thanks to Richard Shaw for initial rebase patch
-- Resolves: #723043
-
-* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.2-3.20090809
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
-
-* Thu Jun 10 2010 Petr Machata <pmachata@redhat.com> - 2.2-2.20090809
-- Replace mfence instruction with xchg to make it run on ia32-class
-  machines without SSE2.
-- Resolves: #600654
-
-* Tue Nov  3 2009 Petr Machata <pmachata@redhat.com> - 2.2-1.20090809
-- New upstream 2.2
-- Resolves: #521571
-
-* Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1-3.20080605
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
-
-* Wed Feb 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1-2.20080605
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
-
-* Fri Jun 13 2008 Petr Machata <pmachata@redhat.com> - 2.1-1.20080605
-- New upstream 2.1
-  - Drop soname patch, parallel make patch, and GCC 4.3 patch
-
-* Wed Feb 13 2008 Petr Machata <pmachata@redhat.com> - 2.0-4.20070927
-- Review fixes
-  - Use updated URL
-  - More timestamp preservation
-- Initial import into Fedora CVS
-
-* Mon Feb 11 2008 Petr Machata <pmachata@redhat.com> - 2.0-3.20070927
-- Review fixes
-  - Preserve timestamp of installed files
-  - Fix soname not to contain "debug"
-
-* Tue Feb  5 2008 Petr Machata <pmachata@redhat.com> - 2.0-2.20070927
-- Review fixes
-  - GCC 4.3 patchset
-  - Add BR util-linux net-tools
-  - Add full URL to Source0
-  - Build in debug mode to work around problems with GCC 4.3
-
-* Mon Dec 17 2007 Petr Machata <pmachata@redhat.com> - 2.0-1.20070927
-- Initial package.
-- Using SONAME patch from Debian.
+for i in tbb tbbmalloc tbbmalloc_proxy irml; do
+	cat >%{buildroot}%{_libdir}/pkgconfig/$i.pc <<EOF
+Name: Thread Building Blocks - $i
+Description: %{summary}
+URL: http://threadbuildingblocks.org/
+Version: %{version}
+Libs: -l$i
+EOF
+done
