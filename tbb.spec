@@ -9,7 +9,7 @@
 Summary:	Thread Building Blocks
 Name:		tbb
 Version:	2020.1
-Release:	1
+Release:	2
 Url:		http://threadbuildingblocks.org/
 Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}.tar.gz
 License:	Apache 2.0
@@ -18,6 +18,8 @@ BuildRequires:	make
 BuildRequires:	doxygen graphviz
 BuildRequires:	pkgconfig(python3)
 BuildRequires:	swig
+# Only for the dependency generator
+BuildRequires:	cmake
 # Don't snip -Wall from C++ flags.  Add -fno-strict-aliasing, as that
 # uncovers some static-aliasing warnings.
 # Related: https://bugzilla.redhat.com/show_bug.cgi?id=1037347
