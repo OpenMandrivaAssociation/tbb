@@ -8,8 +8,8 @@
 
 Summary:	Thread Building Blocks
 Name:		tbb
-Version:	2020.1
-Release:	2
+Version:	2020.3
+Release:	1
 Url:		http://threadbuildingblocks.org/
 Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}.tar.gz
 License:	Apache 2.0
@@ -23,18 +23,18 @@ BuildRequires:	cmake
 # Don't snip -Wall from C++ flags.  Add -fno-strict-aliasing, as that
 # uncovers some static-aliasing warnings.
 # Related: https://bugzilla.redhat.com/show_bug.cgi?id=1037347
-Patch0:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-dont-snip-Wall.patch
+Patch0:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-dont-snip-Wall.patch
 # Make attributes of aliases match those on the aliased function.
-Patch1:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-attributes.patch
+Patch1:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2020-attributes.patch
 # Fix test-thread-monitor, which had multiple bugs that could (and did, on
 # ppc64le) result in a hang.
-Patch2:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-test-thread-monitor.patch
+Patch2:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-test-thread-monitor.patch
 # Fix a test that builds a 4-thread barrier, but cannot guarantee that more
 # than 2 threads will be available to use it.
-Patch3:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-test-task-scheduler-init.patch
+Patch3:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-test-task-scheduler-init.patch
 # Fix compilation on aarch64 and s390x.  See
 # https://github.com/intel/tbb/issues/186
-Patch4:		https://src.fedoraproject.org/rpms/tbb/raw/master/f/tbb-2019-fetchadd4.patch
+Patch4:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-fetchadd4.patch
 
 %description
 Thread Building Blocks
@@ -113,7 +113,7 @@ Python bindings for Thread Building Blocks
 %{python3_sitearch}/__pycache__/TBB*
 
 %prep
-%autosetup -p1
+%autosetup -p1 -n oneTBB-%{version}
 
 %build
 if echo %{__cc} | grep -q gcc; then
