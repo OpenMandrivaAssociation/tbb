@@ -1,6 +1,7 @@
+%define tbbmajor 12
 %define major 2
 
-%define libtbb %mklibname tbb %{major}
+%define libtbb %mklibname tbb %{tbbmajor}
 %define libtbbmalloc %mklibname tbbmalloc %{major}
 %define libtbbmalloc_proxy %mklibname tbbmalloc_proxy %{major}
 %define libirml %mklibname irml 1
@@ -8,30 +9,18 @@
 
 Summary:	Thread Building Blocks
 Name:		tbb
-Version:	2020.3
+Version:	2021.1.1
 Release:	1
 Url:		http://threadbuildingblocks.org/
 Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}.tar.gz
 License:	Apache 2.0
 Group:		System/Libraries
-BuildRequires:	make
+BuildRequires:	ninja
 BuildRequires:	doxygen graphviz
 BuildRequires:	pkgconfig(python3)
 BuildRequires:	swig
-# Only for the dependency generator
 BuildRequires:	cmake
-# Don't snip -Wall from C++ flags.  Add -fno-strict-aliasing, as that
-# uncovers some static-aliasing warnings.
-# Related: https://bugzilla.redhat.com/show_bug.cgi?id=1037347
-Patch0:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-dont-snip-Wall.patch
-# Make attributes of aliases match those on the aliased function.
-Patch1:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2020-attributes.patch
-# Fix test-thread-monitor, which had multiple bugs that could (and did, on
-# ppc64le) result in a hang.
-Patch2:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-test-thread-monitor.patch
-# Fix a test that builds a 4-thread barrier, but cannot guarantee that more
-# than 2 threads will be available to use it.
-Patch3:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-test-task-scheduler-init.patch
+Patch0:		tbb-2021.1.1-compile.patch
 # Fix compilation on aarch64 and s390x.  See
 # https://github.com/intel/tbb/issues/186
 Patch4:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-fetchadd4.patch
@@ -47,7 +36,7 @@ Group:		System/Libraries
 Thread Building Blocks library
 
 %files -n %{libtbb}
-%{_libdir}/libtbb.so.%{major}
+%{_libdir}/libtbb.so.%{tbbmajor}*
 
 %package -n %{libtbbmalloc}
 Summary:	Thread Building Blocks library
@@ -57,7 +46,7 @@ Group:		System/Libraries
 Thread Building Blocks library
 
 %files -n %{libtbbmalloc}
-%{_libdir}/libtbbmalloc.so.%{major}
+%{_libdir}/libtbbmalloc.so.%{major}*
 
 %package -n %{libtbbmalloc_proxy}
 Summary:	Thread Building Blocks library
@@ -67,7 +56,7 @@ Group:		System/Libraries
 Thread Building Blocks library
 
 %files -n %{libtbbmalloc_proxy}
-%{_libdir}/libtbbmalloc_proxy.so.%{major}
+%{_libdir}/libtbbmalloc_proxy.so.%{major}*
 
 %package -n %{libirml}
 Summary:	Thread Building Blocks library
@@ -92,12 +81,10 @@ Provides:	%{name}-devel = %{EVRD}
 Development files for the Thread Building Blocks library
 
 %files -n %{devname}
-%doc html
+%{_includedir}/oneapi
 %{_includedir}/tbb
-%{_includedir}/rml
-%{_includedir}/serial
 %{_libdir}/*.so
-%{_libdir}/cmake/tbb
+%{_libdir}/cmake/TBB
 %{_libdir}/pkgconfig/*.pc
 
 %package -n python-%{name}
@@ -115,55 +102,29 @@ Python bindings for Thread Building Blocks
 %prep
 %autosetup -p1 -n oneTBB-%{version}
 
+%if "%{_lib}" != "lib"
+sed -i -e 's,/build/lib,/build/%{_lib},g' python/CMakeLists.txt
+%endif
+
+# TBB_STRICT enables -Werror, causing the build to barf instantly
+# because of "argument unused during compilation: '-MD'" when using
+# clang
+%cmake \
+	-DTBB_STRICT:BOOL=OFF \
+	-DTBB4PY_BUILD:BOOL=ON \
+	-G Ninja
+
 %build
-if echo %{__cc} | grep -q gcc; then
-	COMPILER=gcc
-else
-	# Workaround for clang bug
-	COMPILER=gcc #clang
-fi
-%make_build all compiler=$COMPILER stdver=c++2a \
-	CXXFLAGS="%{optflags} -DDO_ITT_NOTIFY -DUSE_PTHREAD" \
-	LDFLAGS="%{ldflags} -pthread"
-
-. build/*_release/tbbvars.sh
-cd python
-%make_build -C rml stdver=c++2a \
-	CPLUS_FLAGS="%{optflags} -DDO_ITT_NOTIFY -DUSE_PTHREAD" \
-	LDFLAGS="%{ldflags} -pthread"
-cp -a rml/libirml.so* .
-%py3_build
-cd -
-
-%make_build doxygen
-
+%ninja_build -C build
+%ninja_build -C build python_build
 
 %install
-mkdir -p %{buildroot}%{_libdir}/cmake %{buildroot}%{_libdir}/pkgconfig
-install -p -D -m 755 build/*_release/*.so.%{major} %{buildroot}%{_libdir}/
+%ninja_install -C build
 
-cd %{buildroot}%{_libdir}
-for i in *.so.*; do
-	ln -s $i $(echo $i |sed -e 's,\.so\..*,.so,')
-done
-cd -
+#rm cmake/README.md
+#cp -a cmake %{buildroot}%{_libdir}/cmake/%{name}
 
-cp -a include %{buildroot}%{_includedir}
-cp -a src/rml/include %{buildroot}%{_includedir}/rml
-
-find %{buildroot}%{_includedir} -name "*.html" |xargs rm -f
-
-. build/*_release/tbbvars.sh
-cd python
-%py3_install
-find %{buildroot} -name "*.py" |xargs chmod +x
-cp -a libirml.so.1 %{buildroot}%{_libdir}/
-ln -s libirml.so.1 %{buildroot}%{_libdir}/libirml.so
-cd -
-
-rm cmake/README.rst
-cp -a cmake %{buildroot}%{_libdir}/cmake/%{name}
-
+mkdir -p %{buildroot}%{_libdir}/pkgconfig
 for i in tbb tbbmalloc tbbmalloc_proxy irml; do
 	cat >%{buildroot}%{_libdir}/pkgconfig/$i.pc <<EOF
 Name: Thread Building Blocks - $i
