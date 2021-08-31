@@ -1,0 +1,42 @@
+diff -up oneTBB-2021.3.0/cmake/compilers/Clang.cmake.omv~ oneTBB-2021.3.0/cmake/compilers/Clang.cmake
+--- oneTBB-2021.3.0/cmake/compilers/Clang.cmake.omv~	2021-08-31 18:22:47.588380169 +0200
++++ oneTBB-2021.3.0/cmake/compilers/Clang.cmake	2021-08-31 18:38:46.871813009 +0200
+@@ -50,3 +50,6 @@ endif()
+ 
+ # TBB malloc settings
+ set(TBBMALLOC_LIB_COMPILE_FLAGS -fno-rtti -fno-exceptions)
++
++# Some stuff is broken with -Werror...
++set(TBB_COMMON_COMPILE_FLAGS ${TBB_COMMON_COMPILE_FLAGS} -Wno-error=unused-but-set-variable -Wno-error=deprecated-declarations -Wno-error=deprecated-copy)
+diff -up oneTBB-2021.3.0/cmake/utils.cmake.omv~ oneTBB-2021.3.0/cmake/utils.cmake
+diff -up oneTBB-2021.3.0/src/tbb/arena.cpp.omv~ oneTBB-2021.3.0/src/tbb/arena.cpp
+diff -up oneTBB-2021.3.0/test/common/doctest.h.omv~ oneTBB-2021.3.0/test/common/doctest.h
+--- oneTBB-2021.3.0/test/common/doctest.h.omv~	2021-08-31 18:12:46.956447181 +0200
++++ oneTBB-2021.3.0/test/common/doctest.h	2021-08-31 18:15:19.922243442 +0200
+@@ -4044,7 +4044,7 @@ namespace {
+         static bool             isSet;
+         static struct sigaction oldSigActions[DOCTEST_COUNTOF(signalDefs)];
+         static stack_t          oldSigStack;
+-        static char             altStackMem[4 * SIGSTKSZ];
++        static char *           altStackMem;
+ 
+         static void handleSignal(int sig) {
+             const char* name = "<unknown signal>";
+@@ -4062,6 +4062,8 @@ namespace {
+ 
+         FatalConditionHandler() {
+             isSet = true;
++	    if (altStackMem == nullptr)
++                altStackMem = new char[4 * SIGSTKSZ];
+             stack_t sigStack;
+             sigStack.ss_sp    = altStackMem;
+             sigStack.ss_size  = sizeof(altStackMem);
+@@ -4092,7 +4094,7 @@ namespace {
+     bool             FatalConditionHandler::isSet                                      = false;
+     struct sigaction FatalConditionHandler::oldSigActions[DOCTEST_COUNTOF(signalDefs)] = {};
+     stack_t          FatalConditionHandler::oldSigStack                                = {};
+-    char             FatalConditionHandler::altStackMem[]                              = {};
++    char *           FatalConditionHandler::altStackMem                                = nullptr;
+ 
+ #endif // DOCTEST_PLATFORM_WINDOWS
+ #endif // DOCTEST_CONFIG_POSIX_SIGNALS || DOCTEST_CONFIG_WINDOWS_SEH

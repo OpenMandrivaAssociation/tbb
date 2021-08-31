@@ -9,7 +9,7 @@
 
 Summary:	Thread Building Blocks
 Name:		tbb
-Version:	2021.1.1
+Version:	2021.3.0
 Release:	1
 Url:		http://threadbuildingblocks.org/
 Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}.tar.gz
@@ -20,7 +20,8 @@ BuildRequires:	doxygen graphviz
 BuildRequires:	pkgconfig(python3)
 BuildRequires:	swig
 BuildRequires:	cmake
-Patch0:		tbb-2021.1.1-compile.patch
+#Patch0:		tbb-2021.1.1-compile.patch
+Patch1:		tbb-2021.3.0-compile.patch
 # Fix compilation on aarch64 and s390x.  See
 # https://github.com/intel/tbb/issues/186
 Patch4:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-fetchadd4.patch
@@ -81,6 +82,7 @@ Provides:	%{name}-devel = %{EVRD}
 Development files for the Thread Building Blocks library
 
 %files -n %{devname}
+%doc %{_docdir}/TBB/README.md
 %{_includedir}/oneapi
 %{_includedir}/tbb
 %{_libdir}/*.so
@@ -110,7 +112,7 @@ sed -i -e 's,/build/lib,/build/%{_lib},g' python/CMakeLists.txt
 # because of "argument unused during compilation: '-MD'" when using
 # clang
 %cmake \
-	-DTBB_STRICT:BOOL=OFF \
+	-DTBB_STRICT:BOOL=ON \
 	-DTBB4PY_BUILD:BOOL=ON \
 	-G Ninja
 
