@@ -1,5 +1,6 @@
 %define tbbmajor 12
 %define major 2
+%define beta rc2
 
 %define libtbb %mklibname tbb %{tbbmajor}
 %define libtbbmalloc %mklibname tbbmalloc %{major}
@@ -9,10 +10,12 @@
 
 Summary:	Thread Building Blocks
 Name:		tbb
-Version:	2021.3.0
-Release:	1
+Version:	2021.5.0
+Release:	%{?beta:0.%{beta}.}1
 Url:		http://threadbuildingblocks.org/
-Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}.tar.gz
+Source0:	https://github.com/oneapi-src/oneTBB/archive/refs/tags/v%{version}%{?beta:-%{beta}}.tar.gz
+#Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}%{?beta:-%{beta}}.tar.gz
+Patch0:		tbb-21.5-no-Werror.patch
 License:	Apache 2.0
 Group:		System/Libraries
 BuildRequires:	ninja
@@ -21,7 +24,7 @@ BuildRequires:	pkgconfig(python3)
 BuildRequires:	swig
 BuildRequires:	cmake
 #Patch0:		tbb-2021.1.1-compile.patch
-Patch1:		tbb-2021.3.0-compile.patch
+#Patch1:		tbb-2021.3.0-compile.patch
 # Fix compilation on aarch64 and s390x.  See
 # https://github.com/intel/tbb/issues/186
 Patch4:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-fetchadd4.patch
@@ -102,15 +105,12 @@ Python bindings for Thread Building Blocks
 %{python3_sitearch}/__pycache__/TBB*
 
 %prep
-%autosetup -p1 -n oneTBB-%{version}
+%autosetup -p1 -n oneTBB-%{version}%{?beta:-%{beta}}
 
 %if "%{_lib}" != "lib"
 sed -i -e 's,/build/lib,/build/%{_lib},g' python/CMakeLists.txt
 %endif
 
-# TBB_STRICT enables -Werror, causing the build to barf instantly
-# because of "argument unused during compilation: '-MD'" when using
-# clang
 %cmake \
 	-DTBB_STRICT:BOOL=ON \
 	-DTBB4PY_BUILD:BOOL=ON \
