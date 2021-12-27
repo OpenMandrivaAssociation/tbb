@@ -1,6 +1,6 @@
 %define tbbmajor 12
 %define major 2
-%define beta rc2
+#define beta rc2
 
 %define libtbb %mklibname tbb %{tbbmajor}
 %define libtbbmalloc %mklibname tbbmalloc %{major}
