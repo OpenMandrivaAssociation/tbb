@@ -11,11 +11,13 @@
 Summary:	Thread Building Blocks
 Name:		tbb
 Version:	2021.5.0
-Release:	%{?beta:0.%{beta}.}1
+Release:	%{?beta:0.%{beta}.}2
 Url:		http://threadbuildingblocks.org/
 Source0:	https://github.com/oneapi-src/oneTBB/archive/refs/tags/v%{version}%{?beta:-%{beta}}.tar.gz
 #Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}%{?beta:-%{beta}}.tar.gz
 Patch0:		tbb-21.5-no-Werror.patch
+# Looks like this is recommended by MOLD developer to fix and speed up LTO https://github.com/rui314/mold/releases/tag/v1.3.0
+Patch1:		https://patch-diff.githubusercontent.com/raw/oneapi-src/oneTBB/pull/824.patch
 License:	Apache 2.0
 Group:		System/Libraries
 BuildRequires:	ninja
@@ -102,7 +104,6 @@ Python bindings for Thread Building Blocks
 %files -n python-%{name}
 %{python3_sitearch}/TBB*
 %{python3_sitearch}/tbb
-%{python3_sitearch}/__pycache__/TBB*
 
 %prep
 %autosetup -p1 -n oneTBB-%{version}%{?beta:-%{beta}}
