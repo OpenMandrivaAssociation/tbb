@@ -2,18 +2,25 @@
 %define major 2
 #define beta rc2
 
-%define libtbb %mklibname tbb %{tbbmajor}
-%define libtbbmalloc %mklibname tbbmalloc %{major}
-%define libtbbmalloc_proxy %mklibname tbbmalloc_proxy %{major}
-%define libirml %mklibname irml 1
+%define libtbb %mklibname tbb
+%define libtbbbind %mklibname tbbind
+%define libtbbmalloc %mklibname tbbmalloc
+%define libtbbmalloc_proxy %mklibname tbbmalloc_proxy
+%define libirml %mklibname irml
 %define devname %mklibname -d tbb
+%define oldlibirml %mklibname irml 1
+%define oldlibtbb %mklibname tbb 12
+%define oldlibtbbmalloc %mklibname tbbmalloc 2
+%define oldlibtbbmalloc_proxy %mklibname tbbmalloc_proxy 2
+
 
 Summary:	Thread Building Blocks
 Name:		tbb
-Version:	2021.5.0
-Release:	%{?beta:0.%{beta}.}2
-Url:		http://threadbuildingblocks.org/
-Source0:	https://github.com/oneapi-src/oneTBB/archive/refs/tags/v%{version}%{?beta:-%{beta}}.tar.gz
+Version:	2021.8.0
+Release:	1
+#Release:	%{?beta:0.%{beta}.}1
+Url:		https://oneapi-src.github.io/oneTBB/
+Source0:	https://github.com/oneapi-src/oneTBB/archive/refs/tags/v%{version}/%{name}-%{version}.tar.gz
 #Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}%{?beta:-%{beta}}.tar.gz
 Patch0:		tbb-21.5-no-Werror.patch
 # Looks like this is recommended by MOLD developer to fix and speed up LTO https://github.com/rui314/mold/releases/tag/v1.3.0
@@ -34,9 +41,12 @@ Patch4:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-fetchadd4
 %description
 Thread Building Blocks
 
+#-----------------------------------------------------------------------
+
 %package -n %{libtbb}
 Summary:	Thread Building Blocks library
 Group:		System/Libraries
+Obsoletes:	%{oldlibtbb} < %{EVRD}
 
 %description -n %{libtbb}
 Thread Building Blocks library
@@ -44,9 +54,12 @@ Thread Building Blocks library
 %files -n %{libtbb}
 %{_libdir}/libtbb.so.%{tbbmajor}*
 
+#-----------------------------------------------------------------------
+
 %package -n %{libtbbmalloc}
 Summary:	Thread Building Blocks library
 Group:		System/Libraries
+Obsoletes:	%{oldlibtbbmalloc} < %{EVRD}
 
 %description -n %{libtbbmalloc}
 Thread Building Blocks library
@@ -54,9 +67,25 @@ Thread Building Blocks library
 %files -n %{libtbbmalloc}
 %{_libdir}/libtbbmalloc.so.%{major}*
 
+#-----------------------------------------------------------------------
+
+%package -n %{libtbbbind}
+Summary:	Thread Building Blocks library
+Group:		System/Libraries
+
+
+%description -n %{libtbbbind}
+Thread Building Blocks library
+
+%files -n %{libtbbbind}
+%{_libdir}/libtbbbind_2_5.so.3*
+
+#-----------------------------------------------------------------------
+
 %package -n %{libtbbmalloc_proxy}
 Summary:	Thread Building Blocks library
 Group:		System/Libraries
+Obsoletes:	%{oldlibtbbmalloc_proxy} < %{EVRD}
 
 %description -n %{libtbbmalloc_proxy}
 Thread Building Blocks library
@@ -64,15 +93,20 @@ Thread Building Blocks library
 %files -n %{libtbbmalloc_proxy}
 %{_libdir}/libtbbmalloc_proxy.so.%{major}*
 
+#-----------------------------------------------------------------------
+
 %package -n %{libirml}
 Summary:	Thread Building Blocks library
 Group:		System/Libraries
+Obsoletes:	%{oldlibirml} < %{EVRD}
 
 %description -n %{libirml}
 Thread Building Blocks library
 
 %files -n %{libirml}
 %{_libdir}/libirml.so.1
+
+#-----------------------------------------------------------------------
 
 %package -n %{devname}
 Summary:	Development files for the Thread Building Blocks library
@@ -94,6 +128,8 @@ Development files for the Thread Building Blocks library
 %{_libdir}/cmake/TBB
 %{_libdir}/pkgconfig/*.pc
 
+#-----------------------------------------------------------------------
+
 %package -n python-%{name}
 Summary:	Python bindings for Thread Building Blocks
 Group:		System/Libraries
@@ -103,7 +139,8 @@ Python bindings for Thread Building Blocks
 
 %files -n python-%{name}
 %{python3_sitearch}/TBB*
-%{python3_sitearch}/tbb
+
+#-----------------------------------------------------------------------
 
 %prep
 %autosetup -p1 -n oneTBB-%{version}%{?beta:-%{beta}}
