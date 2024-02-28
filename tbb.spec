@@ -16,27 +16,22 @@
 
 Summary:	Thread Building Blocks
 Name:		tbb
-Version:	2021.8.0
+Version:	2021.11.0
 Release:	1
 #Release:	%{?beta:0.%{beta}.}1
 Url:		https://oneapi-src.github.io/oneTBB/
 Source0:	https://github.com/oneapi-src/oneTBB/archive/refs/tags/v%{version}/%{name}-%{version}.tar.gz
 #Source0:	https://github.com/intel/tbb/archive/v%{version}/%{name}-%{version}%{?beta:-%{beta}}.tar.gz
 Patch0:		tbb-21.5-no-Werror.patch
-# Looks like this is recommended by MOLD developer to fix and speed up LTO https://github.com/rui314/mold/releases/tag/v1.3.0
-Patch1:		https://patch-diff.githubusercontent.com/raw/oneapi-src/oneTBB/pull/824.patch
 License:	Apache 2.0
 Group:		System/Libraries
 BuildRequires:	ninja
-BuildRequires:	doxygen graphviz
+BuildRequires:	doxygen
+BuildRequires:	graphviz
+BuildRequires:	pkgconfig(hwloc)
 BuildRequires:	pkgconfig(python3)
 BuildRequires:	swig
 BuildRequires:	cmake
-#Patch0:		tbb-2021.1.1-compile.patch
-#Patch1:		tbb-2021.3.0-compile.patch
-# Fix compilation on aarch64 and s390x.  See
-# https://github.com/intel/tbb/issues/186
-Patch4:		https://src.fedoraproject.org/rpms/tbb/raw/rawhide/f/tbb-2019-fetchadd4.patch
 
 %description
 Thread Building Blocks
@@ -148,6 +143,8 @@ Python bindings for Thread Building Blocks
 %if "%{_lib}" != "lib"
 sed -i -e 's,/build/lib,/build/%{_lib},g' python/CMakeLists.txt
 %endif
+
+export LDFLAGS="$LDFLAGS -Wl,--undefined-version"
 
 %cmake \
 	-DTBB_STRICT:BOOL=ON \
