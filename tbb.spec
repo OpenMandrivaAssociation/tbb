@@ -16,7 +16,7 @@
 
 Summary:	Thread Building Blocks
 Name:		tbb
-Version:	2021.11.0
+Version:	2021.13.0
 Release:	1
 #Release:	%{?beta:0.%{beta}.}1
 Url:		https://oneapi-src.github.io/oneTBB/
