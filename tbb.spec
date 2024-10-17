@@ -166,7 +166,7 @@ for i in tbb tbbmalloc tbbmalloc_proxy irml; do
 	cat >%{buildroot}%{_libdir}/pkgconfig/$i.pc <<EOF
 Name: Thread Building Blocks - $i
 Description: %{summary}
-URL: http://threadbuildingblocks.org/
+URL: https://threadbuildingblocks.org/
 Version: %{version}
 Libs: -l$i
 EOF
