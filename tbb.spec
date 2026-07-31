@@ -16,7 +16,7 @@
 
 Summary:	Thread Building Blocks
 Name:		tbb
-Version:	2021.13.0
+Version:	2023.1.0
 Release:	1
 #Release:	%{?beta:0.%{beta}.}1
 Url:		https://oneapi-src.github.io/oneTBB/
@@ -138,7 +138,7 @@ Python bindings for Thread Building Blocks
 #-----------------------------------------------------------------------
 
 %prep
-%autosetup -p1 -n oneTBB-%{version}%{?beta:-%{beta}}
+%autosetup -p1 -n oneTBB-2023.1.0
 
 %if "%{_lib}" != "lib"
 sed -i -e 's,/build/lib,/build/%{_lib},g' python/CMakeLists.txt
